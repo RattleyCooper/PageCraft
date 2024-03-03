@@ -50,9 +50,10 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
     # This is where we handle creating HTML tags
     of nnkCall, nnkCommand: 
       var tag = y[0]
+      let otag = tag
       tag.expectKind nnkIdent
       if $tag == "divv": tag = ident("div")
-      if y.len > 1:
+      if y.len > 2:
         writeLit spaces, "<", tag, " "
         for i, n in y:
           if n.kind == nnkExprEqExpr:
@@ -62,19 +63,42 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
               writeLit "\" "
             else:
               writeLit $n[0], "=\"", $n[1], "\" "
-          elif n.kind == nnkIdent or n.kind == nnkStrLit:
+          elif n.kind == nnkStrLit:
+            if $n != $otag:
+              writeLit $n, " "
             writeLit $n, " "
         writeLit ">\n"
         if y[^1].kind == nnkStmtList:
           result.add htmlInner(y[^1], indent + 2)
         writeLit spaces, "</", tag, ">\n"
+      elif y.len == 2:
+        tag.expectKind nnkIdent
+        # Handle tags without nesting, but with params
+        if y[1].kind == nnkExprEqExpr:
+          var n = y[1]
+          writeLit spaces, "<", tag, " "
+          if n[1].kind == nnkCurly:
+            writeLit $n[0], "=\""
+            write n[1][0]
+            writeLit "\" "
+          else:
+            writeLit $y[1][0], "=", $y[1][1]
+          writeLit ">\n"
+        # elif y[1].kind == nnkIdent:
+        #   writeLit $y[1], " "
+        else:
+          writeLit spaces, "<", tag, ">\n"
+          # Recurse over child          
+          result.add htmlInner(y[1], indent + 2)
+          writeLit spaces, "</", tag, ">\n"
       else:
         writeLit spaces, "<", tag, " "
         for i, n in y:
           if n.kind == nnkExprEqExpr:
             writeLit $n[0], "=\"", $n[1], "\" "
-          elif n.kind == nnkIdent or n.kind == nnkStrLit:
-            writeLit $n, " "
+          elif n.kind == nnkStrLit or n.kind == nnkIdent:
+            if $n != $otag:
+              writeLit $n, " "
         writeLit ">\n"
 
     else: # Write str lits
