@@ -70,4 +70,6 @@ proc myTemplate(title: string, content: string, contentURI: string) {.htmlTempla
         p: "&copy; 2024. All rights reserved. ʕ⊙ᴥ⊙ʔ"
       
       script src="/scripts/prism.js"
+
+echo myTemplate("This is my webpage", "Oh wow, this content!", "/assets/contentImg.png")
  ```
