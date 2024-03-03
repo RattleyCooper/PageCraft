@@ -10,7 +10,7 @@ template writeLit(args: varargs[string, `$`]) =
 
 proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletime.} =
   result = newStmtList()
-    
+  
   x.expectKind nnkStmtList
   let spaces = repeat(' ', indent)
   for y in x:
@@ -62,6 +62,8 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
               writeLit "\" "
             else:
               writeLit $n[0], "=\"", $n[1], "\" "
+          elif n.kind == nnkIdent or n.kind == nnkStrLit:
+            writeLit $n, " "
         writeLit ">\n"
         if y[^1].kind == nnkStmtList:
           result.add htmlInner(y[^1], indent + 2)
@@ -71,6 +73,8 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
         for i, n in y:
           if n.kind == nnkExprEqExpr:
             writeLit $n[0], "=\"", $n[1], "\" "
+          elif n.kind == nnkIdent or n.kind == nnkStrLit:
+            writeLit $n, " "
         writeLit ">\n"
 
     else: # Write str lits
