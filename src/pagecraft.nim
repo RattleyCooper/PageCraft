@@ -51,11 +51,20 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
     of nnkCall, nnkCommand: 
       var tag = y[0]
       let otag = tag
+      var addSpace = true
       tag.expectKind nnkIdent
+
       if $tag == "divv": tag = ident("div")
       if y.len > 2:
-        writeLit spaces, "<", tag, " "
+        if y[1].kind == nnkIdent and $y[1] == "pcInline":
+          addSpace = false
+        if addSpace:
+          writeLit spaces, "<", tag, " "
+        else:
+          writeLit "<", tag, " "
         for i, n in y:
+          if n.kind == nnkIdent and $n == "pcInline":
+            continue
           if n.kind == nnkExprEqExpr:
             if n[1].kind == nnkCurly:
               writeLit $n[0], "=\""
@@ -67,32 +76,54 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
             if $n != $otag:
               writeLit $n, " "
             writeLit $n, " "
-        writeLit ">\n"
+        if addSpace:
+          writeLit ">\n"
+        else:
+          writeLit ">"
         if y[^1].kind == nnkStmtList:
           result.add htmlInner(y[^1], indent + 2)
-        writeLit spaces, "</", tag, ">\n"
+        if addSpace:
+          writeLit spaces, "</", tag, ">\n"
+        else:
+          writeLit "</", tag, ">"
+
       elif y.len == 2:
         tag.expectKind nnkIdent
         # Handle tags without nesting, but with params
         if y[1].kind == nnkExprEqExpr:
           var n = y[1]
-          writeLit spaces, "<", tag, " "
+          if addSpace:
+            writeLit spaces, "<", tag, " "
+          else:
+            writeLit "<", tag, " "
+
           if n[1].kind == nnkCurly:
             writeLit $n[0], "=\""
             write n[1][0]
             writeLit "\" "
           else:
             writeLit $y[1][0], "=", $y[1][1]
-          writeLit ">\n"
-        # elif y[1].kind == nnkIdent:
-        #   writeLit $y[1], " "
+          if addSpace:
+            writeLit ">\n"
+          else:
+            writeLit ">"
+        elif y[1].kind == nnkIdent and $y[1] == "pcInline":
+          addSpace = false
         else:
-          writeLit spaces, "<", tag, ">\n"
+          if addSpace:
+            writeLit spaces, "<", tag, ">\n"
+          else:
+            writeLit "<", tag, ">"
+
           # Recurse over child          
           result.add htmlInner(y[1], indent + 2)
           writeLit spaces, "</", tag, ">\n"
       else:
-        writeLit spaces, "<", tag, " "
+        if addSpace:
+          writeLit spaces, "<", tag, " "
+        else:
+          writeLit "<", tag, " "
+
         for i, n in y:
           if n.kind == nnkExprEqExpr:
             writeLit $n[0], "=\"", $n[1], "\" "
@@ -102,9 +133,22 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
         writeLit ">\n"
 
     else: # Write str lits
-      writeLit spaces
-      write y
-      writeLit "\n"
+      case y.kind:
+      of nnkTripleStrLit, nnkStrLit:
+        var ys = $y
+        ys = ys.strip()
+        if startsWith(ys, "pcInline"):
+          ys = ys.replace("pcInline ", "")
+          result.add quote do:
+            result.add `ys`
+        else:
+          writeLit spaces
+          write y
+          writeLit "\n"
+      else:
+        writeLit spaces
+        write y
+        writeLit "\n"
 
 macro htmlTemplate*(procDef: untyped): untyped =
   procDef.expectKind nnkProcDef
