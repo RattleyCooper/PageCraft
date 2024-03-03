@@ -40,9 +40,13 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
     of nnkIfStmt: # Traverse If statements.
       var newIfs: seq[(NimNode, NimNode)]
       for k in y:
-        let branch = (k[0], htmlInner(k[^1], indent + 2))
-        newIfs.add branch
+        for j in 0 ..< k.len - 1:
+          let ncond = k[j]
+          let nbranch = (ncond, htmlInner(k[^1], indent + 2))
+          newIfs.add nbranch
       result.add newIfStmt(newIfs)
+      if y[^1].kind == nnkElse:
+        result.add htmlInner(y[^1][0], indent + 2)
     of nnkCall, nnkCommand:
       var tag = y[0]
       if $tag == "divv": tag = ident("div")
