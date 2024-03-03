@@ -27,6 +27,7 @@ proc myTemplate(title: string, content: string, contentURI: string) {.htmlTempla
       meta charset="UTF-8"
       meta name="viewport", content="width=device-width, initial-scale=1.0"
       
+      # Run an if/elif/else block to modify the title for demo
       if title == "Hello":
         title: {title.toUpper()}
       elif title == "World":
