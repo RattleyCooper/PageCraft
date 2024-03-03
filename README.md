@@ -10,7 +10,9 @@
 
  ## Install
 
- Run `nimble install` inside the directory you extract this repository into.
+ Run `nimble install` inside the directory you extract this repository into or run:
+
+ `nimble install https://github.com/RattleyCooper/PageCraft`
 
  ## Usage
 
