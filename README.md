@@ -4,7 +4,7 @@
 
  https://hookrace.net/blog/introduction-to-metaprogramming-in-nim/
 
- to create a more useable DSL for generating HTML in nim. Super helpful for templates for web development You can set arguments on HTML tags, run specific blocks of code in your template (`if/elif`/`case` statements for now), and evaluate code surrounded by `{}`.  This is in early development, so you may run into kewords that do not work, as they are reserved by Nim.  One of these is `div`.  You can write `divv` instead of `div` to create a `<div>` tag.  If you run into anything that doesn't work create an issue or pull request.
+ to create a more useable DSL for generating HTML in nim. Super helpful for templates for web development You can set arguments on HTML tags, run specific blocks of code in your template (`if/elif`/`case` statements for now), and evaluate code surrounded by `{}`.  This is in early development, so you may run into keywords that do not work, as they are reserved by Nim.  One of these is `div`.  You can write `divv` instead of `div` to create a `<div>` tag.  If you run into anything that doesn't work create an issue or pull request.
 
  ## Install
 
@@ -51,7 +51,7 @@ proc myTemplate(title: string, content: string, contentURI: string) {.htmlTempla
         else:
           ""
 
-      # Evalute stuff using `{}`
+      # Evaluate stuff using `{}`
       divv class="myContent": {"Here is my content: " & content}
       
       # Add strings to the inner html of a tag
