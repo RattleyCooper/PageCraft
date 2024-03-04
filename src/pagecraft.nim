@@ -153,7 +153,7 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
 macro htmlTemplate*(procDef: untyped): untyped =
   procDef.expectKind nnkProcDef
 
-  echo procDef.treeRepr
+  # echo procDef.treeRepr
   # Same name as specified
   let name = procDef[0]
 
