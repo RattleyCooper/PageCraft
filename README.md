@@ -72,3 +72,32 @@ proc myTemplate(title: string, content: string, contentURI: string) {.htmlTempla
 
 echo myTemplate("This is my webpage", "Oh wow, this content!", "/assets/contentImg.png")
  ```
+
+Alternatively you can run `nimcode` blocks to work with data and create variables you can use to fill in the sections of the template. This is the only sure way to run complex nim code with PageCraft.
+
+```nim
+import pagecraft
+
+proc makeTag(data: int) {.htmlTemplate.} =
+  # Use data to fill in a <p> tag.
+  p: 
+    $data
+
+proc doStuff() {.htmlTemplate.} =
+  nimcode:
+    var ptags: string
+    for i in 0 .. 10:
+      ptags &= makeTag(i)
+
+  html:
+    body:
+      section:
+        divv:
+          # not necessary to use {} but helps
+          # to distinguish between HTML and 
+          # variables.
+          {ptags} 
+
+
+echo doStuff()
+```

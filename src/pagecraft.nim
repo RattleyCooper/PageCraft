@@ -9,6 +9,7 @@ template writeLit(args: varargs[string, `$`]) =
   write newStrLitNode(args.join)
 
 proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletime.} =
+  echo x.treeRepr
   result = newStmtList()
   
   x.expectKind nnkStmtList
@@ -55,6 +56,9 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
       tag.expectKind nnkIdent
 
       if $tag == "divv": tag = ident("div")
+      if $tag == "forr": tag = ident("for")
+      if $tag == "methodd": tag = ident("method")
+
       if y.len > 2:
         if y[1].kind == nnkIdent and $y[1] == "pcInline":
           addSpace = false
@@ -89,6 +93,12 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
 
       elif y.len == 2:
         tag.expectKind nnkIdent
+        if $tag == "nimcode" and y[1].kind == nnkStmtList: 
+          for s in y[1]:
+            result.add quote do:
+              `s`
+          continue
+          # continue
         # Handle tags without nesting, but with params
         if y[1].kind == nnkExprEqExpr:
           var n = y[1]
