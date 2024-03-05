@@ -9,7 +9,7 @@ template writeLit(args: varargs[string, `$`]) =
   write newStrLitNode(args.join)
 
 proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletime.} =
-  echo x.treeRepr
+  # echo x.treeRepr
   result = newStmtList()
   
   x.expectKind nnkStmtList
