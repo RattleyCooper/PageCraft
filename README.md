@@ -4,7 +4,7 @@
 
  https://hookrace.net/blog/introduction-to-metaprogramming-in-nim/
 
- to create a more useable DSL for generating HTML in nim. Super helpful for templates for web development You can set arguments on HTML tags, run specific blocks of code in your template (`if/elif`/`case` statements for now), and evaluate code surrounded by `{}`.  This is in early development, so you may run into keywords that do not work, as they are reserved by Nim.  One of these is `div`.  You can write `divv` instead of `div` to create a `<div>` tag.  If you run into anything that doesn't work create an issue or pull request.
+ to create a more useable DSL for generating HTML in nim. Super helpful for templates for web development You can set arguments on HTML tags, run nim code in your templates, and evaluate code surrounded by `{}`.  This is in early development, so you may run into keywords that do not work, as they are reserved by Nim.  One of these is `div`.  You can write `divv` instead of `div` to create a `<div>` tag. If you run into other tags that don't work because they're used by nim you can try duplicating the tag's last letter. If you run into anything that doesn't work as expected create an issue or pull request.
 
  ## Install
 
@@ -73,7 +73,7 @@ proc myTemplate(title: string, content: string, contentURI: string) {.htmlTempla
 echo myTemplate("This is my webpage", "Oh wow, this content!", "/assets/contentImg.png")
  ```
 
-Alternatively you can run `nimcode` blocks to work with data and create variables you can use to fill in the sections of the template. This is the only sure way to run complex nim code within the PageCraft DSL at the moment, however it's very effective!
+Run `nimcode` blocks to work with data and create variables you can use to fill in the sections of the template. This is the only sure way to run complex nim code within the PageCraft DSL at the moment, however it's very effective! Note that you cannot mix the pagecraft DSL into `nimcode` blocks, but you can call procedures that use the DSL to make the same data available through a variable:
 
 ```nim
 import pagecraft
@@ -87,15 +87,13 @@ proc doStuff() {.htmlTemplate.} =
   nimcode:
     var ptags: string
     for i in 0 .. 10:
-      ptags &= makeTag(i)
+      ptags &= makeTag(i) # Collect <p> tags
 
   html lang="en":
     body:
       section:
         divv:
-          # not necessary to use {} but helps
-          # to distinguish between HTML and 
-          # variables.
+          # insert the <p> tags into the div.
           {ptags} 
 
 
