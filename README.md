@@ -89,7 +89,7 @@ proc doStuff() {.htmlTemplate.} =
     for i in 0 .. 10:
       ptags &= makeTag(i)
 
-  html:
+  html lang="en":
     body:
       section:
         divv:
