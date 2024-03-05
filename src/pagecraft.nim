@@ -56,9 +56,6 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
       tag.expectKind nnkIdent
 
       if $tag == "divv": tag = ident("div")
-      if $tag == "forr": tag = ident("for")
-      if $tag == "methodd": tag = ident("method")
-
       if y.len > 2:
         if y[1].kind == nnkIdent and $y[1] == "pcInline":
           addSpace = false
@@ -70,12 +67,15 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
           if n.kind == nnkIdent and $n == "pcInline":
             continue
           if n.kind == nnkExprEqExpr:
+            var k = n[0]
+            if $k == "forr": k = ident("for")
+            if $k == "methodd": k = ident("method")
             if n[1].kind == nnkCurly:
-              writeLit $n[0], "=\""
+              writeLit $k, "=\""
               write n[1][0]
               writeLit "\" "
             else:
-              writeLit $n[0], "=\"", $n[1], "\" "
+              writeLit $k, "=\"", $n[1], "\" "
           elif n.kind == nnkStrLit:
             if $n != $otag:
               writeLit $n, " "
@@ -108,11 +108,17 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
             writeLit "<", tag, " "
 
           if n[1].kind == nnkCurly:
-            writeLit $n[0], "=\""
+            var k = n[0]
+            if $k == "forr": k = ident("for")
+            if $k == "methodd": k = ident("method")
+            writeLit $k, "=\""
             write n[1][0]
             writeLit "\" "
           else:
-            writeLit $y[1][0], "=", $y[1][1]
+            var k = y[1][0]
+            if $k == "forr": k = ident("for")
+            if $k == "methodd": k = ident("method")
+            writeLit $k, "=", $y[1][1]
           if addSpace:
             writeLit ">\n"
           else:
@@ -136,7 +142,10 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
 
         for i, n in y:
           if n.kind == nnkExprEqExpr:
-            writeLit $n[0], "=\"", $n[1], "\" "
+            var k = n[0]
+            if $k == "forr": k = ident("for")
+            if $k == "methodd": k = ident("method")
+            writeLit $k, "=\"", $n[1], "\" "
           elif n.kind == nnkStrLit or n.kind == nnkIdent:
             if $n != $otag:
               writeLit $n, " "
