@@ -9,7 +9,115 @@ template writeLit(args: varargs[string, `$`]) =
   write newStrLitNode(args.join)
 
 proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletime.} =
-  # echo x.treeRepr
+  ## Patch the proc so it runs as PageCraft code.
+  #
+
+  proc innerNimCode(nn: NimNode, idn = 0): NimNode {.compileTime.} =    
+    ## Recursively patch `nimcode` blocks so the AST
+    ## handles the pagecraft dsl.
+    #
+    nn.expectKind nnkStmtList
+    var r = newStmtList()
+    for s in nn:
+      case s.kind
+      of nnkCall, nnkCommand:
+        let cidn = s[0]
+        if cidn.kind == nnkIdent and $cidn == "pagecraft":
+          r.add htmlInner(s[1], idn + 2)
+        else:
+          r.add quote do:
+            `s`
+      of nnkForStmt:
+        var newFor = newStmtList()
+        newFor.add innerNimCode(s[^1], idn)
+        # newFor.add innerNimCode(stmts, idn + 2)
+        r.add nnkForStmt.newTree(
+          s[0], s[1], newFor
+        )
+      of nnkWhileStmt:
+        var newWhile = newStmtList()
+        newWhile = innerNimCode(s[^1], idn)
+        r.add nnkWhileStmt.newTree(
+          s[0], newWhile
+        )
+      of nnkCaseStmt:
+        var newCase = nnkCaseStmt.newTree()
+        var caseIdent = s[0]
+        newCase.add caseIdent
+        for branch in s[1..^1]:
+          var ofStmts = newStmtList()
+          case branch.kind
+          of nnkOfBranch:
+            ofStmts.add innerNimCode(branch[^1], idn)
+            var newBranch = nnkOfBranch.newTree()
+            newBranch.add branch[0]
+            newBranch.add ofStmts
+            newCase.add newBranch
+          of nnkElse:
+            ofStmts.add innerNimCode(branch[^1], idn)
+            var newBranch = nnkElse.newTree()
+            newBranch.add ofStmts
+            newCase.add newBranch
+          else:
+            continue
+
+        r.add quote do:
+          `newCase`
+      of nnkTryStmt:
+        var newTry = nnkTryStmt.newTree()
+        var tryStmts = innerNimCode(s[0], idn)
+        newTry.add tryStmts
+        for branch in s[1..^1]:
+          var excStmts = newStmtList()
+          case branch.kind
+          of nnkExceptBranch:
+            excStmts.add innerNimCode(branch[^1], idn)
+            var newBranch = nnkExceptBranch.newTree()
+            if branch.len > 1:
+              for idnt in branch:
+                if idnt.kind == nnkIdent:
+                  newBranch.add idnt
+            newBranch.add excStmts
+            newTry.add newBranch
+          of nnkElse:
+            excStmts.add innerNimCode(branch[^1], idn)
+            var newBranch = nnkElse.newTree()
+            newBranch.add excStmts
+            newTry.add newBranch
+          else:
+            continue
+        r.add quote do:
+          `newTry`
+      of nnkIfStmt:
+        var newIf = nnkIfStmt.newTree()
+        for branch in s:
+          var ifsStmts = newStmtList()
+          var newCond: NimNode
+          var isElse = false
+          case branch.kind
+          of nnkElifBranch:
+            ifsStmts.add innerNimCode(branch[^1], idn)
+            newCond = branch[0]
+          of nnkElse:
+            ifsStmts.add innerNimCode(branch[^1], idn)
+          else:
+            continue
+          if isElse:
+            var newBranch = nnkElse.newTree()
+            newBranch.add ifsStmts
+            newIf.add newBranch
+          else:
+            var newBranch = nnkElifBranch.newTree()
+            newBranch.add newCond
+            newBranch.add ifsStmts
+            newIf.add newBranch
+        r.add quote do:
+          `newIf`
+      else:
+        r.add quote do:
+          `s`
+    r
+
   result = newStmtList()
   
   x.expectKind nnkStmtList
@@ -94,11 +202,8 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
       elif y.len == 2:
         tag.expectKind nnkIdent
         if $tag == "nimcode" and y[1].kind == nnkStmtList: 
-          for s in y[1]:
-            result.add quote do:
-              `s`
+          result.add innerNimCode(y[1], indent + 2)
           continue
-          # continue
         # Handle tags without nesting, but with params
         if y[1].kind == nnkExprEqExpr:
           var n = y[1]
@@ -172,7 +277,6 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
 macro htmlTemplate*(procDef: untyped): untyped =
   procDef.expectKind nnkProcDef
 
-  # echo procDef.treeRepr
   # Same name as specified
   let name = procDef[0]
 
@@ -183,7 +287,6 @@ macro htmlTemplate*(procDef: untyped): untyped =
     params.add procDef[3][i]
 
   var body = newStmtList()
-  # result = ""
   body.add newAssignment(newIdentNode("result"),
     newStrLitNode(""))
   # Recurse over DSL definition
