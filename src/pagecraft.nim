@@ -79,9 +79,9 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
                   newBranch.add idnt
             newBranch.add excStmts
             newTry.add newBranch
-          of nnkElse:
+          of nnkFinally:
             excStmts.add innerNimCode(branch[^1], idn)
-            var newBranch = nnkElse.newTree()
+            var newBranch = nnkFinally.newTree()
             newBranch.add excStmts
             newTry.add newBranch
           else:
