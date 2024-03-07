@@ -87,8 +87,12 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
             continue
         r.add quote do:
           `newTry`
-      of nnkIfStmt:
-        var newIf = nnkIfStmt.newTree()
+      of nnkIfStmt, nnkWhenStmt:
+        var newIf: NimNode
+        if s.kind == nnkIfStmt:
+          newIf = nnkIfStmt.newTree()
+        else:
+          newIf = nnkWhenStmt.newTree()
         for branch in s:
           var ifsStmts = newStmtList()
           case branch.kind
@@ -170,6 +174,7 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
             continue
           if n.kind == nnkExprEqExpr:
             var k = n[0]
+            if $k == "typee": k = ident("type")
             if $k == "forr": k = ident("for")
             if $k == "methodd": k = ident("method")
             if n[1].kind == nnkCurly:
@@ -205,9 +210,9 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
             writeLit spaces, "<", tag, " "
           else:
             writeLit "<", tag, " "
-
           if n[1].kind == nnkCurly:
             var k = n[0]
+            if $k == "typee": k = ident("type")
             if $k == "forr": k = ident("for")
             if $k == "methodd": k = ident("method")
             writeLit $k, "=\""
@@ -215,6 +220,7 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
             writeLit "\" "
           else:
             var k = y[1][0]
+            if $k == "typee": k = ident("type")
             if $k == "forr": k = ident("for")
             if $k == "methodd": k = ident("method")
             writeLit $k, "=", $y[1][1]
@@ -242,6 +248,7 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
         for i, n in y:
           if n.kind == nnkExprEqExpr:
             var k = n[0]
+            if $k == "typee": k = ident("type")
             if $k == "forr": k = ident("for")
             if $k == "methodd": k = ident("method")
             writeLit $k, "=\"", $n[1], "\" "
