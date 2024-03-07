@@ -30,7 +30,6 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
       of nnkForStmt:
         var newFor = newStmtList()
         newFor.add innerNimCode(s[^1], idn)
-        # newFor.add innerNimCode(stmts, idn + 2)
         r.add nnkForStmt.newTree(
           s[0], s[1], newFor
         )
@@ -92,25 +91,20 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
         var newIf = nnkIfStmt.newTree()
         for branch in s:
           var ifsStmts = newStmtList()
-          var newCond: NimNode
-          var isElse = false
           case branch.kind
           of nnkElifBranch:
             ifsStmts.add innerNimCode(branch[^1], idn)
-            newCond = branch[0]
+            var newBranch = nnkElifBranch.newTree()
+            newBranch.add branch[0]
+            newBranch.add ifsStmts
+            newIf.add newBranch
           of nnkElse:
             ifsStmts.add innerNimCode(branch[^1], idn)
-          else:
-            continue
-          if isElse:
             var newBranch = nnkElse.newTree()
             newBranch.add ifsStmts
             newIf.add newBranch
           else:
-            var newBranch = nnkElifBranch.newTree()
-            newBranch.add newCond
-            newBranch.add ifsStmts
-            newIf.add newBranch
+            continue
         r.add quote do:
           `newIf`
       else:
