@@ -16,9 +16,9 @@
 
  ## Usage
 
- Define a `proc`, tag it with `{.htmlTemplate.}`, then you can write generate HTML using `pagecraft` syntax within that procedure and it will return a string containing the HTML. If you need/want to use nim in your template code use `nimcode`/`pagecraft` blocks as shown in the example code.
+ Define a `proc`, tag it with `{.htmlTemplate.}`, then you can generate HTML using `pagecraft` syntax within that procedure and it will return a string containing the HTML. If you need/want to use nim in your template code use `nimcode`/`pagecraft` blocks as shown in the example code.
  
- This is in early development, so you may run into tags or keywords that do not work, as they are reserved by Nim.  One of these is `div`.  You can write `divv` instead of `div` to create a `<div>` tag. If you run into other tags or keywords that don't work because they're used by nim you can try duplicating the tag's last letter(`type`=>`typee`). 
+ This is in early-ish development, so you may run into tags or keywords that do not work, as they are reserved by Nim.  One of these is `div`.  You can write `divv` instead of `div` to create a `<div>` tag. If you run into other tags or keywords that don't work because they're used by nim you can try duplicating the tag's last letter(`type`=>`typee`). 
 
  Note that running `pagecraft` code within `nimcode` blocks is somewhat limited, but a lot of core language features are available (see list below).
 
@@ -33,7 +33,7 @@
 
  * other nested/blocky things in nim's AST. Basically, if there is a `nnkStmtList` node attached to a `NimNode` in the `nimcode` block and `pagecraft` blocks are located in that `nnkStmtList` they will not be evaluated using PageCraft and you'll get an error during compilation. Support for these language constructs must be added manually until a different solution can be implemented.
 
-## Eamples
+## Examples
 
  ```nim
 import pagecraft
