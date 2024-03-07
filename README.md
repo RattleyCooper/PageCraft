@@ -28,6 +28,7 @@
  * case
  * for/while 
  * try/else/finally
+ * `when` statements
 
  ### Pagecraft Blocks can't evaluate in...
 
