@@ -133,7 +133,7 @@ Pull in data with `Debby`, generate HTML with `PageCraft` and serve it with `Mum
 ```nim
 import mummy, mummy/routers
 import debby/[pools, sqlite]
-import src/pagecraft
+import pagecraft
 
 # Use debby pools with mummy to be safe
 let pool = newPool()
