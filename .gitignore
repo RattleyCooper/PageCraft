@@ -1,3 +1,4 @@
 *.exe
 tt.nim
 show.nim
+*.db
