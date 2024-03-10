@@ -2,6 +2,9 @@ import micros
 import macros, strutils
 
 
+proc escapeHtml*(input: string): string =
+  result = input.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("\'", "&#39;")
+
 template write(arg: untyped) =
   result.add newCall("add", newIdentNode("result"), arg)
 
@@ -11,7 +14,6 @@ template writeLit(args: varargs[string, `$`]) =
 proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletime.} =
   ## Patch the proc so it runs as PageCraft code.
   #
-
   proc innerNimCode(nn: NimNode, idn = 0): NimNode {.compileTime.} =    
     ## Recursively patch `nimcode` blocks so the AST
     ## handles the pagecraft dsl.
@@ -174,15 +176,16 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
             continue
           if n.kind == nnkExprEqExpr:
             var k = n[0]
-            if $k == "typee": k = ident("type")
-            if $k == "forr": k = ident("for")
-            if $k == "methodd": k = ident("method")
+            var kc = ident(($k).replace("_", "-"))
+            if $kc == "typee": kc = ident("type")
+            if $kc == "forr": kc = ident("for")
+            if $kc == "methodd": kc = ident("method")
             if n[1].kind == nnkCurly:
-              writeLit $k, "=\""
+              writeLit $kc, "=\""
               write n[1][0]
               writeLit "\" "
             else:
-              writeLit $k, "=\"", $n[1], "\" "
+              writeLit $kc, "=\"", $n[1], "\" "
           elif n.kind == nnkStrLit:
             if $n != $otag:
               writeLit $n, " "
@@ -212,18 +215,20 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
             writeLit "<", tag, " "
           if n[1].kind == nnkCurly:
             var k = n[0]
-            if $k == "typee": k = ident("type")
-            if $k == "forr": k = ident("for")
-            if $k == "methodd": k = ident("method")
-            writeLit $k, "=\""
+            var kc = ident(($k).replace("_", "-"))
+            if $kc == "typee": kc = ident("type")
+            if $kc == "forr": kc = ident("for")
+            if $kc == "methodd": kc = ident("method")
+            writeLit $kc, "=\""
             write n[1][0]
             writeLit "\" "
           else:
             var k = y[1][0]
-            if $k == "typee": k = ident("type")
-            if $k == "forr": k = ident("for")
-            if $k == "methodd": k = ident("method")
-            writeLit $k, "=", $y[1][1]
+            var kc = ident(($k).replace("_", "-"))
+            if $kc == "typee": kc = ident("type")
+            if $kc == "forr": kc = ident("for")
+            if $kc == "methodd": kc = ident("method")
+            writeLit $kc, "=", $y[1][1]
           if addSpace:
             writeLit ">\n"
           else:
@@ -248,10 +253,12 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
         for i, n in y:
           if n.kind == nnkExprEqExpr:
             var k = n[0]
-            if $k == "typee": k = ident("type")
-            if $k == "forr": k = ident("for")
-            if $k == "methodd": k = ident("method")
-            writeLit $k, "=\"", $n[1], "\" "
+            var kc = ident(($k).replace("_", "-"))
+
+            if $kc == "typee": kc = ident("type")
+            if $kc == "forr": kc = ident("for")
+            if $kc == "methodd": kc = ident("method")
+            writeLit $kc, "=\"", $n[1], "\" "
           elif n.kind == nnkStrLit or n.kind == nnkIdent:
             if $n != $otag:
               writeLit $n, " "
