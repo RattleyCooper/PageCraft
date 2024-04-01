@@ -1,4 +1,4 @@
-# (ﾉ◕ヮ◕)ﾉ*:･ﾟ✧ PageCraft ✧･ﾟ*:ˋ(◕▽、◕) 
+# (ﾉ◕ヮ◕)ﾉ*:･ﾟ✧ PageCraft
 
  A powerful DSL for generating dynamic HTML. 
  
