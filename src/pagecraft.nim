@@ -11,84 +11,23 @@ template write(arg: untyped) =
 template writeLit(args: varargs[string, `$`]) =
   write newStrLitNode(args.join)
 
-proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletime.} =
+proc nimcode(nodes: NimNode): NimNode {.compiletime, inline.} =
+  quote do:
+    `nodes`
+
+proc htmlInner(x: NimNode, indent = 0, stringProc = false, nimCode: bool = false, newLines: bool = true): NimNode {.compiletime.} =
   ## Patch the proc so it runs as PageCraft code.
   #
-  proc innerNimCode(nn: NimNode, idn = 0): NimNode {.compileTime.} =    
-    ## Recursively patch `nimcode` blocks so the AST
-    ## handles the pagecraft dsl.
+  
+  proc innerNimCode(nn: NimNode, idn = 0, html: bool = false): NimNode {.compiletime, inline.} =    
+    ## Recursively patch nim lang constructs so the AST
+    ## handles nim code with pagecraft dsl.
     #
     nn.expectKind nnkStmtList
+    
     var r = newStmtList()
     for s in nn:
       case s.kind
-      of nnkCall, nnkCommand:
-        let cidn = s[0]
-        if cidn.kind == nnkIdent and $cidn == "pagecraft":
-          r.add htmlInner(s[1], idn + 2)
-        else:
-          r.add quote do:
-            `s`
-      of nnkForStmt:
-        var newFor = newStmtList()
-        newFor.add innerNimCode(s[^1], idn)
-        r.add nnkForStmt.newTree(
-          s[0], s[1], newFor
-        )
-      of nnkWhileStmt:
-        var newWhile = newStmtList()
-        newWhile = innerNimCode(s[^1], idn)
-        r.add nnkWhileStmt.newTree(
-          s[0], newWhile
-        )
-      of nnkCaseStmt:
-        var newCase = nnkCaseStmt.newTree()
-        var caseIdent = s[0]
-        newCase.add caseIdent
-        for branch in s[1..^1]:
-          var ofStmts = newStmtList()
-          case branch.kind
-          of nnkOfBranch:
-            ofStmts.add innerNimCode(branch[^1], idn)
-            var newBranch = nnkOfBranch.newTree()
-            newBranch.add branch[0]
-            newBranch.add ofStmts
-            newCase.add newBranch
-          of nnkElse:
-            ofStmts.add innerNimCode(branch[^1], idn)
-            var newBranch = nnkElse.newTree()
-            newBranch.add ofStmts
-            newCase.add newBranch
-          else:
-            continue
-
-        r.add quote do:
-          `newCase`
-      of nnkTryStmt:
-        var newTry = nnkTryStmt.newTree()
-        var tryStmts = innerNimCode(s[0], idn)
-        newTry.add tryStmts
-        for branch in s[1..^1]:
-          var excStmts = newStmtList()
-          case branch.kind
-          of nnkExceptBranch:
-            excStmts.add innerNimCode(branch[^1], idn)
-            var newBranch = nnkExceptBranch.newTree()
-            if branch.len > 1:
-              for idnt in branch:
-                if idnt.kind == nnkIdent:
-                  newBranch.add idnt
-            newBranch.add excStmts
-            newTry.add newBranch
-          of nnkFinally:
-            excStmts.add innerNimCode(branch[^1], idn)
-            var newBranch = nnkFinally.newTree()
-            newBranch.add excStmts
-            newTry.add newBranch
-          else:
-            continue
-        r.add quote do:
-          `newTry`
       of nnkIfStmt, nnkWhenStmt:
         var newIf: NimNode
         if s.kind == nnkIfStmt:
@@ -99,13 +38,13 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
           var ifsStmts = newStmtList()
           case branch.kind
           of nnkElifBranch:
-            ifsStmts.add innerNimCode(branch[^1], idn)
+            ifsStmts.add htmlInner(branch[^1], idn)
             var newBranch = nnkElifBranch.newTree()
             newBranch.add branch[0]
             newBranch.add ifsStmts
             newIf.add newBranch
           of nnkElse:
-            ifsStmts.add innerNimCode(branch[^1], idn)
+            ifsStmts.add htmlInner(branch[^1], idn)
             var newBranch = nnkElse.newTree()
             newBranch.add ifsStmts
             newIf.add newBranch
@@ -113,178 +52,188 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false): NimNode {.compiletim
             continue
         r.add quote do:
           `newIf`
+      of nnkForStmt:
+        var newFor = newStmtList()
+        newFor.add htmlInner(s[^1], idn)
+        r.add nnkForStmt.newTree(
+          s[0], s[1], newFor
+        )
+      of nnkCall, nnkCommand:
+        var newHtmlStmts = newStmtList()
+        if s[0].kind == nnkDotExpr:
+          newHtmlStmts.add s
+        else:
+          for stmnt in s:
+            newHtmlStmts.add stmnt
+        r.add htmlInner(newHtmlStmts, idn, true)
+      of nnkCaseStmt:
+        var newCase = nnkCaseStmt.newTree()
+        var caseIdent = s[0]
+        newCase.add caseIdent
+        for branch in s[1..^1]:
+          var ofStmts = newStmtList()
+          case branch.kind
+          of nnkOfBranch:
+            ofStmts.add htmlInner(branch[^1], idn)
+            var newBranch = nnkOfBranch.newTree()
+            newBranch.add branch[0]
+            newBranch.add ofStmts
+            newCase.add newBranch
+          of nnkElse:
+            ofStmts.add htmlInner(branch[^1], idn)
+            var newBranch = nnkElse.newTree()
+            newBranch.add ofStmts
+            newCase.add newBranch
+          else:
+            continue
+
+        r.add quote do:
+          `newCase`
+      of nnkTryStmt:
+        var newTry = nnkTryStmt.newTree()
+        var tryStmts = htmlInner(s[0], idn)
+        newTry.add tryStmts
+        for branch in s[1..^1]:
+          var excStmts = newStmtList()
+          case branch.kind
+          of nnkExceptBranch:
+            excStmts.add htmlInner(branch[^1], idn)
+            var newBranch = nnkExceptBranch.newTree()
+            if branch.len > 1:
+              for idnt in branch:
+                if idnt.kind == nnkIdent:
+                  newBranch.add idnt
+            newBranch.add excStmts
+            newTry.add newBranch
+          of nnkFinally:
+            excStmts.add htmlInner(branch[^1], idn)
+            var newBranch = nnkFinally.newTree()
+            newBranch.add excStmts
+            newTry.add newBranch
+          else:
+            continue
+        r.add quote do:
+          `newTry`      
+      of nnkInfix:
+        r.add quote do:
+          `s`
+      of nnkCurly:
+        var newHtmlStmts = newStmtList()
+        for stmnt in s:
+          newHtmlStmts.add stmnt
+        r.add htmlInner(newHtmlStmts, idn, true)
+      of nnkWhileStmt:
+        var newWhile = newStmtList()
+        newWhile = htmlInner(s[^1], idn)
+        r.add nnkWhileStmt.newTree(
+          s[0], newWhile
+        )
+      of nnkTableConstr:
+        var newHtmlStmts = newStmtList()
+        for stmnt in s:
+          newHtmlStmts.add stmnt
+        r.add htmlInner(newHtmlStmts, idn)
       else:
         r.add quote do:
           `s`
     r
 
   result = newStmtList()
-  
   x.expectKind nnkStmtList
-  let spaces = repeat(' ', indent)
+  var spaces = repeat(' ', indent)
+  
   for y in x:
-    if stringProc:  # Handle evaluating strings in curly braces
-      result.add quote do:
-        result.add `y`
-      continue
     case y.kind
-    of nnkCurly: # try to evaluate things in curly braces
+    # try to evaluate things in curly braces
+    of nnkCurly: # example: {something.toUpper()} 
       let b = y[0]
-      var s = newStmtList()
-      s.add quote do:
-        `b`
-      result.add htmlInner(s, indent + 2, true)
-    of nnkCaseStmt: # Transform Case statements into If/elif/else
-      var toCheck = y[0]
-      var branches = y[1..^1]
-      var newIfs: seq[(NimNode, NimNode)]
-      for branch in branches: # Every of
-        for j in 0 ..< branch.len - 1: # Handle all cases from one of
-          let ncond = condition(elifBranch(newCall("==", toCheck, branch[j]), htmlInner(branch[^1], indent + 2)))
-          let newBranch = (ncond, htmlInner(branch[^1], indent + 2))
-          newIfs.add newBranch        
-      result.add newIfStmt(newIfs) 
-      if branches[^1].kind == nnkElse: # Append the else branch
-        result.add htmlInner(branches[^1][0], indent + 2)
-    of nnkIfStmt: # Traverse If statements.
-      var newIfs: seq[(NimNode, NimNode)]
-      for k in y: # Every if/elif/else
-        for j in 0 ..< k.len - 1:  # handle all and/or as well
-          let ncond = k[j]
-          let nbranch = (ncond, htmlInner(k[^1], indent + 2))
-          newIfs.add nbranch
-      result.add newIfStmt(newIfs)
-      if y[^1].kind == nnkElse: # Append the else branch
-        result.add htmlInner(y[^1][0], indent + 2)
-    # This is where we handle creating HTML tags
-    of nnkCall, nnkCommand: 
+      # Calls will evaluate to something else that will
+      # automatically add spacing.
+      if b.kind != nnkCall: 
+        writeLit spaces
+      result.add quote do:
+        result.add `b`
+      if b.kind != nnkCall: 
+        writeLit "\n"
+    of nnkCommand: # example: html lang="en":
       var tag = y[0]
-      let otag = tag
-      var addSpace = true
       tag.expectKind nnkIdent
-
       if $tag == "divv": tag = ident("div")
-      if y.len > 2:
-        if y[1].kind == nnkIdent and $y[1] == "pcInline":
-          addSpace = false
-        if addSpace:
-          writeLit spaces, "<", tag, " "
-        else:
-          writeLit "<", tag, " "
-        for i, n in y:
-          if n.kind == nnkIdent and $n == "pcInline":
-            continue
-          if n.kind == nnkExprEqExpr:
-            var k = n[0]
-            var kc = ident(($k).replace("_", "-"))
-            if $kc == "typee": kc = ident("type")
-            if $kc == "forr": kc = ident("for")
-            if $kc == "methodd": kc = ident("method")
-            if n[1].kind == nnkCurly:
-              writeLit $kc, "=\""
-              write n[1][0]
-              writeLit "\" "
-            else:
-              writeLit $kc, "=\"", $n[1], "\" "
-          elif n.kind == nnkStrLit:
-            if $n != $otag:
-              writeLit $n, " "
-            writeLit $n, " "
-        if addSpace:
-          writeLit ">\n"
-        else:
-          writeLit ">"
-        if y[^1].kind == nnkStmtList:
-          result.add htmlInner(y[^1], indent + 2)
-        if addSpace:
-          writeLit spaces, "</", tag, ">\n"
-        else:
-          writeLit "</", tag, ">"
-
-      elif y.len == 2:
-        tag.expectKind nnkIdent
-        if $tag == "nimcode" and y[1].kind == nnkStmtList: 
-          result.add innerNimCode(y[1], indent + 2)
-          continue
-        # Handle tags without nesting, but with params
-        if y[1].kind == nnkExprEqExpr:
-          var n = y[1]
-          if addSpace:
-            writeLit spaces, "<", tag, " "
-          else:
-            writeLit "<", tag, " "
-          if n[1].kind == nnkCurly:
-            var k = n[0]
-            var kc = ident(($k).replace("_", "-"))
-            if $kc == "typee": kc = ident("type")
-            if $kc == "forr": kc = ident("for")
-            if $kc == "methodd": kc = ident("method")
+      writeLit spaces, "<", $tag, " "
+      var ran = y[1..^1]
+      if ran[^1].kind == nnkStmtList:
+        ran = y[1..^2]
+      for exp in ran:
+        if exp.kind == nnkExprEqExpr:
+          var k = exp[0]
+          var kc = ident(($k).replace("_", "-"))
+          if $kc == "typee": kc = ident("type")
+          if $kc == "forr": kc = ident("for")
+          if $kc == "methodd": kc = ident("method")
+          if exp[1].kind == nnkCurly:
             writeLit $kc, "=\""
-            write n[1][0]
+            write exp[1][0]
             writeLit "\" "
           else:
-            var k = y[1][0]
-            var kc = ident(($k).replace("_", "-"))
-            if $kc == "typee": kc = ident("type")
-            if $kc == "forr": kc = ident("for")
-            if $kc == "methodd": kc = ident("method")
-            writeLit $kc, "=", $y[1][1]
-          if addSpace:
-            writeLit ">\n"
-          else:
-            writeLit ">"
-        elif y[1].kind == nnkIdent and $y[1] == "pcInline":
-          addSpace = false
-        else:
-          if addSpace:
-            writeLit spaces, "<", tag, ">\n"
-          else:
-            writeLit "<", tag, ">"
-
-          # Recurse over child          
-          result.add htmlInner(y[1], indent + 2)
-          writeLit spaces, "</", tag, ">\n"
-      else:
-        if addSpace:
-          writeLit spaces, "<", tag, " "
-        else:
-          writeLit "<", tag, " "
-
-        for i, n in y:
-          if n.kind == nnkExprEqExpr:
-            var k = n[0]
-            var kc = ident(($k).replace("_", "-"))
-
-            if $kc == "typee": kc = ident("type")
-            if $kc == "forr": kc = ident("for")
-            if $kc == "methodd": kc = ident("method")
-            writeLit $kc, "=\"", $n[1], "\" "
-          elif n.kind == nnkStrLit or n.kind == nnkIdent:
-            if $n != $otag:
-              writeLit $n, " "
-        writeLit ">\n"
-
-    else: # Write str lits
-      case y.kind:
-      of nnkTripleStrLit, nnkStrLit:
-        var ys = $y
-        ys = ys.strip()
-        if startsWith(ys, "pcInline"):
-          ys = ys.replace("pcInline ", "")
-          result.add quote do:
-            result.add `ys`
-        else:
-          writeLit spaces
-          write y
-          writeLit "\n"
-      else:
+            writeLit $kc, "=\"", $exp[1], "\"", " "
+      writeLit ">\n"
+      # Command has block of statements, so add closing tag
+      if y[^1].kind == nnkStmtList:
+        result.add htmlInner(y[^1], indent + 2)
+        writeLit spaces, "</", $tag, ">", "\n"
+    of nnkCall: # example: divv:
+      if stringProc:
         writeLit spaces
-        write y
+        result.add quote do:
+          result.add `y`.strip()
         writeLit "\n"
+        continue
 
-macro htmlTemplate*(procDef: untyped): untyped =
+      var tag = y[0]
+
+      if $tag == "nim" or $tag == "nimcode":
+        result.add nimcode(y[1])
+        continue
+
+      tag.expectKind nnkIdent
+      if $tag == "divv": tag = ident("div")
+      writeLit spaces, "<", $tag, ">", "\n"
+      if y[1].kind == nnkStmtList:
+        result.add htmlInner(y[1], indent + 2)
+      else:
+        let l = newStmtList()
+        l.add y[1]
+        result.add htmlInner(l, indent + 2)
+        writeLit "\n"
+      writeLit spaces, "</", $tag, ">", "\n"
+    of nnkIdent: # example: br -> <br>
+      var tag = y
+      if $tag == "divv": tag = ident("div")
+      writeLit spaces, "<", $tag, ">\n"
+    of nnkStrLit, nnkTripleStrLit: # example: "stuff"
+      writeLit spaces, ($y).strip(), "\n"
+    of nnkPrefix: # example: /html -> </html>
+      let pre = y[0]
+      var tag = y[1]
+      if $tag == "divv": tag = ident("div")
+      case $pre
+      of "/":
+        writeLit spaces, "</", $tag, ">\n"
+      else:
+        discard
+    # Pass nim language constructs/control flow to
+    # enable mixing nim with pagecraft syntax seemlessly
+    else: 
+      try:
+        let ds = newStmtList()
+        ds.add y
+        result.add innerNimCode(ds, indent)
+      except:
+        discard
+
+proc baseTemplate(indent: int, procDef: NimNode): NimNode =
   procDef.expectKind nnkProcDef
-
+  
   # Same name as specified
   let name = procDef[0]
 
@@ -293,12 +242,18 @@ macro htmlTemplate*(procDef: untyped): untyped =
   # Same parameters as specified
   for i in 1..<procDef[3].len:
     params.add procDef[3][i]
-
+  
   var body = newStmtList()
   body.add newAssignment(newIdentNode("result"),
     newStrLitNode(""))
   # Recurse over DSL definition
-  body.add htmlInner(procDef[6])
+  body.add htmlInner(procDef[6], indent)
 
   # Return a new proc
   result = newStmtList(newProc(name, params, body))
+
+macro htmlTemplate*(procDef: untyped): untyped =
+  baseTemplate(0, procDef)
+
+macro alignTemplate*(indent: static[int], procDef: untyped): untyped =
+  baseTemplate(indent, procDef)
