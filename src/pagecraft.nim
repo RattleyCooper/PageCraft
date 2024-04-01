@@ -244,8 +244,10 @@ proc baseTemplate(indent: int, procDef: NimNode): NimNode =
     params.add procDef[3][i]
   
   var body = newStmtList()
-  body.add newAssignment(newIdentNode("result"),
-    newStrLitNode(""))
+  body.add quote do:
+    result = newStringOfCap(1024)
+  # body.add newAssignment(newIdentNode("result"),
+  #   newStrLitNode(""))
   # Recurse over DSL definition
   body.add htmlInner(procDef[6], indent)
 
