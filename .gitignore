@@ -3,3 +3,5 @@ tt.nim
 show.nim
 *.db
 src/nPagecraft.nim
+example.nim
+profile_results.txt
