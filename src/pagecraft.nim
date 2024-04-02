@@ -3,7 +3,15 @@ import macros, strutils
 
 
 proc escapeHtml*(input: string): string =
-  result = input.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;").replace("\'", "&#39;")
+  result = newStringOfCap(input.len)
+  for c in input:
+    case c
+    of '&': result.add("&amp;")
+    of '<': result.add("&lt;")
+    of '>': result.add("&gt;")
+    of '"': result.add("&quot;")
+    of '\'': result.add("&#39;")
+    else: result.add(c)
 
 template write(arg: untyped) =
   result.add newCall("add", newIdentNode("result"), arg)
