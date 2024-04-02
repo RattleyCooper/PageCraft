@@ -1,12 +1,12 @@
-# (ﾉ◕ヮ◕)ﾉ*:･ﾟ✧ PageCraft
+# ✧ PageCraft ✧
 
- A powerful DSL for generating dynamic HTML. 
+ A powerful Template Engine/DSL for generating dynamic HTML. 
  
  Expands on the concepts introduced at:
 
  https://hookrace.net/blog/introduction-to-metaprogramming-in-nim/
 
- to create a more useable DSL for generating HTML in nim. It features full data interpolation, logic/control flow, and exception handling.
+ to create a more feature rich DSL for generating HTML in nim. It features full data interpolation, logic/control flow, and exception handling.
 
  ## Install
 
