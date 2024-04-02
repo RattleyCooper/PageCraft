@@ -60,7 +60,7 @@ proc myTemplate(title: string, content: string, contentURI: string, css: string)
         title: "UNEXPECTED TITLE"
       
       # Use `{}` when inserting into tag keywords
-      link rel="stylesheet", href={css}
+      link rel="stylesheet", href={css} # adds "" automatically
     
     body:
       header:
@@ -89,7 +89,8 @@ proc myTemplate(title: string, content: string, contentURI: string, css: string)
           p: {"Remix pagecraft code into nim " & $x}
 
       divv class="myContent": 
-        {"Here is my content: " & content}
+        h2: "Here is my content!"
+        p: {content}
       
       # Add strings to the inner html of a tag
       divv class="contentWrapup":
