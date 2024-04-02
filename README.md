@@ -98,8 +98,6 @@ proc myTemplate(title: string, content: string, contentURI: string, css: string)
           I hope you enjoyed my content!
         """
 
-      divv
-
       footer:
         p: "&copy; 2024. All rights reserved. ʕ⊙ᴥ⊙ʔ"
       
