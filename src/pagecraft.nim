@@ -1,7 +1,6 @@
 import micros
 import macros, strutils
 
-
 proc escapeHtml*(input: string): string =
   result = newStringOfCap(input.len)
   for c in input:
@@ -167,6 +166,8 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false, nimCode: bool = false
       var tag = y[0]
       tag.expectKind nnkIdent
       if $tag == "divv": tag = ident("div")
+      if $tag == "objectt": tag = ident("object")
+
       writeLit spaces, "<", $tag, " "
       var ran = y[1..^1]
       if ran[^1].kind == nnkStmtList:
@@ -176,6 +177,7 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false, nimCode: bool = false
           var k = exp[0]
           var kc = ident(($k).replace("_", "-"))
           if $kc == "typee": kc = ident("type")
+          if $kc == "objectt": kc = ident("object")
           if $kc == "forr": kc = ident("for")
           if $kc == "methodd": kc = ident("method")
           if exp[1].kind == nnkCurly:
@@ -205,6 +207,8 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false, nimCode: bool = false
 
       tag.expectKind nnkIdent
       if $tag == "divv": tag = ident("div")
+      if $tag == "objectt": tag = ident("object")
+
       writeLit spaces, "<", $tag, ">", "\n"
       if y[1].kind == nnkStmtList:
         result.add htmlInner(y[1], indent + 2)
@@ -217,6 +221,8 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false, nimCode: bool = false
     of nnkIdent: # example: br -> <br>
       var tag = y
       if $tag == "divv": tag = ident("div")
+      if $tag == "objectt": tag = ident("object")
+
       writeLit spaces, "<", $tag, ">\n"
     of nnkStrLit, nnkTripleStrLit: # example: "stuff"
       writeLit spaces, ($y).strip(), "\n"
@@ -224,6 +230,8 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false, nimCode: bool = false
       let pre = y[0]
       var tag = y[1]
       if $tag == "divv": tag = ident("div")
+      if $tag == "objectt": tag = ident("object")
+
       case $pre
       of "/":
         writeLit spaces, "</", $tag, ">\n"
