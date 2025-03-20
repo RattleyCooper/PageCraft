@@ -18,7 +18,7 @@
 
  Define a `proc`, tag it with `{.htmlTemplate.}`, then you can generate HTML using `pagecraft` syntax within that procedure and it will return a string containing the HTML. If you need/want to use nim in your template code you can mix in most nim control flow constructs seamlessly, but if you want to run nim code without the macro messing with anything you can put the code into a `nim` or `nimcode` block. This will bypass pagecraft's evaluation of the code entirely.
  
- You may run into tags or keywords that do not work, as they are reserved by Nim. One of these is `div`(for division). You can write `` `div` `` instead of `div` to create a `<div>` tag. If you run into other tags or keywords that don't work because they're used by nim, enclose the tag with backticks. The same goes for keywords in HTML tags.
+ You may run into tags or keywords that do not work, as they are reserved by Nim. One of these is `div`(for division). You can write `` `div` `` (enclosed with backticks) instead of `div` to create a `<div>` tag. If you run into other tags or keywords that don't work because they're used by nim, enclose the tag with backticks. The same goes for keywords in HTML tags.
 
  PageCraft is tag-agnostic and will not create closing tags if there is no content. For example, `script src="/webui.js"` will NOT create a closing `</script>` tag because there is no content defined. You can add an empty string as content(`script src="/webui.js: ""`), or add `/script` on the next line to force the creation of a closing tag for you. This is shown in the example below.
 
