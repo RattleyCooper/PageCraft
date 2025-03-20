@@ -18,7 +18,7 @@
 
  Define a `proc`, tag it with `{.htmlTemplate.}`, then you can generate HTML using `pagecraft` syntax within that procedure and it will return a string containing the HTML. If you need/want to use nim in your template code you can mix in most nim control flow constructs seamlessly, but if you want to run nim code without the macro messing with anything you can put the code into a `nim` or `nimcode` block. This will bypass pagecraft's evaluation of the code entirely.
  
- This is in early-ish development, so you may run into tags or keywords that do not work, as they are reserved by Nim. One of these is `div`. You can write `divv` instead of `div` to create a `<div>` tag. If you run into other tags or keywords that don't work because they're used by nim you can try duplicating the tag's last letter(`type`=>`typee`). They same goes for keywords in HTML tags.
+ You may run into tags or keywords that do not work, as they are reserved by Nim. One of these is `div`(for division). You can write `` `div` `` instead of `div` to create a `<div>` tag. If you run into other tags or keywords that don't work because they're used by nim, enclose the tag with backticks. The same goes for keywords in HTML tags.
 
  PageCraft is tag-agnostic and will not create closing tags if there is no content. For example, `script src="/webui.js"` will NOT create a closing `</script>` tag because there is no content defined. You can add an empty string as content(`script src="/webui.js: ""`), or add `/script` on the next line to force the creation of a closing tag for you. This is shown in the example below.
 
@@ -72,7 +72,7 @@ proc myTemplate(title: string, content: string, contentURI: string, css: string)
         # Let's use the new variable we created.
         p: {newVar}
       
-      divv class="myContentImage":
+      `div` class="myContentImage":
         # If you don't use {} in tag kwargs then 
         # nim will treat your kwarg value as a 
         # string literal.
@@ -85,16 +85,16 @@ proc myTemplate(title: string, content: string, contentURI: string, css: string)
           ""
       
       # Running more pagecraft with nim. 
-      divv class="moreContent":
+      `div` class="moreContent":
         for x in 0 .. 10:
           p: {"Remix pagecraft code into nim " & $x}
 
-      divv class="myContent": 
+      `div` class="myContent": 
         h2: "Here is my content!"
         p: {content}
       
       # Add strings to the inner html of a tag
-      divv class="contentWrapup":
+      `div` class="contentWrapup":
         """
           I hope you enjoyed my content!
         """
@@ -116,7 +116,7 @@ Pull in data with `Debby`, generate HTML with `PageCraft` and serve it with `Mum
 ```nim
 import mummy, mummy/routers
 import debby/[pools, sqlite]
-import pagecraft
+import src/pagecraft
 import strutils
 
 # Use debby pools with mummy to be safe
@@ -154,7 +154,7 @@ div { margin-bottom: 10px; padding: 10px; background-color: #ffffff; border: 1px
 
 # Align the template stubs using `alignTemplate`
 proc carCard(car: Auto) {.alignTemplate: 8.} =
-  divv class="auto-div", id={$car.id}:
+  `div` class="auto-div", id={$car.id}:
     p: {"Make: " & car.make}
     p: {"Model: " & car.model}
     p: {"Year: " & $car.year}
@@ -164,7 +164,7 @@ proc carsSection(cars: seq[Auto]) {.alignTemplate: 2.} =
   section:
     h2: 
       "Check out my cars!"
-    divv:
+    `div`:
       # ~~~ Insert a new car card for each new car
       section class="auto-section":
         for car in cars:

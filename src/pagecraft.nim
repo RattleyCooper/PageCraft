@@ -164,9 +164,9 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false, nimCode: bool = false
         writeLit "\n"
     of nnkCommand: # example: html lang="en":
       var tag = y[0]
+      if tag.kind == nnkAccQuoted:
+        tag = tag[0]
       tag.expectKind nnkIdent
-      if $tag == "divv": tag = ident("div")
-      if $tag == "objectt": tag = ident("object")
 
       writeLit spaces, "<", $tag, " "
       var ran = y[1..^1]
@@ -191,7 +191,7 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false, nimCode: bool = false
       if y[^1].kind == nnkStmtList:
         result.add htmlInner(y[^1], indent + 2)
         writeLit spaces, "</", $tag, ">", "\n"
-    of nnkCall: # example: divv:
+    of nnkCall: # example: div:
       if stringProc:
         writeLit spaces
         result.add quote do:
@@ -205,9 +205,9 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false, nimCode: bool = false
         result.add nimcode(y[1])
         continue
 
+      if tag.kind == nnkAccQuoted:
+        tag = tag[0]
       tag.expectKind nnkIdent
-      if $tag == "divv": tag = ident("div")
-      if $tag == "objectt": tag = ident("object")
 
       writeLit spaces, "<", $tag, ">", "\n"
       if y[1].kind == nnkStmtList:
@@ -220,8 +220,8 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false, nimCode: bool = false
       writeLit spaces, "</", $tag, ">", "\n"
     of nnkIdent: # example: br -> <br>
       var tag = y
-      if $tag == "divv": tag = ident("div")
-      if $tag == "objectt": tag = ident("object")
+      if tag.kind == nnkAccQuoted:
+        tag = tag[0]
 
       writeLit spaces, "<", $tag, ">\n"
     of nnkStrLit, nnkTripleStrLit: # example: "stuff"
@@ -229,8 +229,8 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false, nimCode: bool = false
     of nnkPrefix: # example: /html -> </html>
       let pre = y[0]
       var tag = y[1]
-      if $tag == "divv": tag = ident("div")
-      if $tag == "objectt": tag = ident("object")
+      if tag.kind == nnkAccQuoted:
+        tag = tag[0]
 
       case $pre
       of "/":
