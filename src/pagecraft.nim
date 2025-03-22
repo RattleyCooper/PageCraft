@@ -176,10 +176,6 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false, nimCode: bool = false
         if exp.kind == nnkExprEqExpr:
           var k = exp[0]
           var kc = ident(($k).replace("_", "-"))
-          if $kc == "typee": kc = ident("type")
-          if $kc == "objectt": kc = ident("object")
-          if $kc == "forr": kc = ident("for")
-          if $kc == "methodd": kc = ident("method")
           if exp[1].kind == nnkCurly:
             writeLit $kc, "=\""
             write exp[1][0]
@@ -262,8 +258,7 @@ proc baseTemplate(indent: int, procDef: NimNode): NimNode =
   var body = newStmtList()
   body.add quote do:
     result = newStringOfCap(1024)
-  # body.add newAssignment(newIdentNode("result"),
-  #   newStrLitNode(""))
+
   # Recurse over DSL definition
   body.add htmlInner(procDef[6], indent)
 
