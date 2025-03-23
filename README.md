@@ -8,6 +8,8 @@
 
  to create a more feature rich DSL for generating HTML in nim. It features full data interpolation, logic/control flow, and exception handling.
 
+ Pagecraft focuses on ease of development. There are very few things you really need to know to write pagecraft templates. If you know html, you can create webpages very quickly with pagecraft.
+
  ## Install
 
  Run `nimble install` inside the directory you extract this repository into or run:
@@ -111,12 +113,12 @@ echo myTemplate("This is my webpage", "Oh wow, this content!", "/assets/contentI
 
 ## PageCraft, Debby and Mummy
 
-Pull in data with `Debby`, generate HTML with `PageCraft` and serve it with `Mummy`.
+Pagecraft works very well with the `Mummy` HTML/Web socket server and the `Debby` ORM. Pull in data with `Debby`, generate HTML with `PageCraft` and serve it with `Mummy`.
 
 ```nim
 import mummy, mummy/routers
 import debby/[pools, sqlite]
-import src/pagecraft
+import pagecraft
 import strutils
 
 # Use debby pools with mummy to be safe
