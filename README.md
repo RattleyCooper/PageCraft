@@ -1,119 +1,160 @@
 # ✧ PageCraft ✧
 
- A powerful Template Engine/DSL for generating dynamic HTML. 
- 
- Expands on the concepts introduced at:
+> Sick of templating engines treating you like a toddler who might stick a fork in an electrical socket? 
+> Well, here’s a fork. ʕ⊙ᴥ⊙ʔ
 
- https://hookrace.net/blog/introduction-to-metaprogramming-in-nim/
+### A Zero-Runtime HTML Compiler for Nim.
 
- to create a more feature rich DSL for generating HTML in nim. It features full data interpolation, logic/control flow, and exception handling.
+PageCraft is a high-performance/ergonomic DSL for generating dynamic HTML. Unlike traditional templating engines that parse strings at runtime, PageCraft uses Nim macros to compile your HTML directly into optimized string-concatenation procedures.
 
- Pagecraft focuses on ease of development. There are very few things you really need to know to write pagecraft templates. If you know html, you can create webpages very quickly with pagecraft.
+### Why PageCraft?
 
- ## Install
+This library was born out of frustration with existing web frameworks running on constrained hardware (like the Raspberry Pi Zero W). Most engines burn CPU cycles parsing templates on every request. PageCraft shifts that cost to compile-time.
 
- Run `nimble install` inside the directory you extract this repository into or run:
+```mermaid
+flowchart LR
+    %%{init: {'theme': 'base', 'themeVariables': { 'primaryTextColor': '#000000', 'lineColor': '#333333', 'mainBkg': '#ffffff'}}}%%
+    subgraph Traditional["Traditional Engine (Runtime)"]
+        direction TB
+        A[Request] --> B[Read File]
+        B --> C[Lex/Parse]
+        C --> D[Interpolate]
+        D --> E[Output HTML]
+    end
 
- `nimble install https://github.com/RattleyCooper/PageCraft`
+    subgraph PageCraft["PageCraft (Compile-Time)"]
+        direction TB
+        F[Request] --> G[Execute Binary]
+        G --> H[Output HTML]
+    end
 
- ## Usage
+    style Traditional fill:#f9f9f9,stroke:#333,stroke-dasharray: 5 5,color:#000
+    style PageCraft fill:#e1f5fe,stroke:#01579b,stroke-width:2px,color:#000
+    style A fill:#fff,stroke:#333,color:#000
+    style B fill:#fff,stroke:#333,color:#000
+    style C fill:#fff,stroke:#333,color:#000
+    style D fill:#fff,stroke:#333,color:#000
+    style E fill:#fff,stroke:#333,color:#000
+    style F fill:#fff,stroke:#333,color:#000
+    style G fill:#fff,stroke:#333,color:#000
+    style H fill:#fff,stroke:#333,color:#000
+```
 
- Define a `proc`, tag it with `{.htmlTemplate.}`, then you can generate HTML using `pagecraft` syntax within that procedure and it will return a string containing the HTML. If you need/want to use nim in your template code you can mix in most nim control flow constructs seamlessly, but if you want to run nim code without the macro messing with anything you can put the code into a `nim` or `nimcode` block. This will bypass pagecraft's evaluation of the code entirely.
- 
- You may run into tags or keywords that do not work, as they are reserved by Nim. One of these is `div`(for division). You can write `` `div` `` (enclosed with backticks) instead of `div` to create a `<div>` tag. If you run into other tags or keywords that don't work because they're used by nim, enclose the tag with backticks. The same goes for keywords in HTML tags.
+🚀 Zero Runtime Overhead: No lexers, no parsers, no interpreters running on your server. Just raw speed.
 
- PageCraft is tag-agnostic and will not create closing tags if there is no content. For example, `script src="/webui.js"` will NOT create a closing `</script>` tag because there is no content defined. You can add an empty string as content(`script src="/webui.js: ""`), or add `/script` on the next line to force the creation of a closing tag for you. This is shown in the example below.
+🛡️ Type Safety: If your template tries to print a variable that doesn't exist, your code won't compile.
 
-## Examples
+🧠 Seamless Logic: Use standard Nim if, case, and for loops directly inside your HTML.
+
+🔒 Auditable: ~300 lines of transparent, macro-based code.
+
+### Install
+
+Run `nimble install` inside the directory you extract this repository into or run:
+
+`nimble install https://github.com/RattleyCooper/PageCraft`
+
+### Usage
+
+Define a `proc`, tag it with `{.htmlTemplate.}`, then you can generate HTML using `pagecraft` syntax within that procedure and it will return a string containing the HTML.
+
+### Basic Syntax
+* Tags: Use tag: blocks (e.g., `div:`, `p:`). Use identifiers alone for self-closing tags (e.g., `br`).
+
+* Attributes: Standard Nim syntax (e.g., `html lang="en":`).
+
+* Interpolation: Use `{}` to inject variables (e.g., `p: {myVar}`).
+
+* Reserved Keywords: Use backticks for reserved Nim keywords like `div`.
+
+* ⚠️ Escaping: NO auto-escaping, we're all adults. Use `escapeHtml` provided by pagecraft or bring your own.
+
+* PageCraft automatically converts underscores (`_`) in attribute names to hyphens (`-`) to support modern HTML standards like data attributes. `data_id="12"` in pagecraft becomes `data-id="12"` in generated HTML.
+
+```nim
+# Nim Input
+`div` class="card", data_id="12":
+  ...
+
+# HTML Output
+<div class="card" data-id="12">
+```
+
+### Advanced Features
+1. The nimcode Block
+If you want to run pure Nim code without the macro evaluating it as HTML, use nimcode:
+
+```Nim
+nimcode:
+  var timestamp = "12:00 PM"
+  echo "Generating timestamp..."
+p: {timestamp}
+```
+
+2. Alignment with `alignTemplate`
+For perfect HTML indentation (useful for debugging), use `alignTemplate`. This is a compile-time feature that injects exact whitespace:
+
+```Nim
+proc myComponent() {.alignTemplate: 4.} =
+  p: "I am indented by 4 spaces"
+```
+
+PageCraft is tag-agnostic and will not create closing tags if there is no content. For example, `script src="/webui.js"` will NOT create a closing `</script>` tag because there is no content defined. You can add an empty string as content(`script src="/webui.js": ""`), or add `/script` on the next line to force the creation of a closing tag for you. This is shown in the example below.
+
+### Examples
+
+#### 1. Standard Usage
 
  ```nim
-import pagecraft
-import strutils
+import pagecraft, strutils
 
-# Alternatively pass in records from a debby query,
-# or params you can use for a db query.
-proc myTemplate(title: string, content: string, contentURI: string, css: string) {.htmlTemplate.} =
-  # Run some nim code and set a new variable.
-  nimcode:
-    echo "This is regular nim code"
-    var newVar = "This is a newly created variable"
-
-  # Add raw strings
+proc myTemplate(title: string, content: string) {.htmlTemplate.} =
   "<!DOCTYPE html>"
-
-  # Access the currently generated HTML through
-  # the `result` variable.
-  nimcode:
-    echo "this is the current HTML:\n" & result
-
-  # Define HTML using whitespace instead of <>
   html lang="en":
     head:
-      meta charset="UTF-8"
-      meta name="viewport", content="width=device-width, initial-scale=1.0"
-      
-      # Mix pagecraft with nim
-      if title == "Hello":
-        title: 
-          # Evaluate strings using `{}`
-          {title.toUpper()}
-      elif title == "World":
-        title: {title.toLower()}
-      else:
-        title: "UNEXPECTED TITLE"
-      
-      # Use `{}` when inserting into tag keywords
-      link rel="stylesheet", href={css} # adds "" automatically
-    
+      title: {title}
     body:
-      header:
-        h1: 
-          a href="/", class="homepage-link":
-            {title.toUpper()}
-
-        # Let's use the new variable we created.
-        p: {newVar}
+      h1: {title.toUpper()}
       
-      `div` class="myContentImage":
-        # If you don't use {} in tag kwargs then 
-        # nim will treat your kwarg value as a 
-        # string literal.
-        case title:
-        of "Hello", "World":
-          pagecraft:
-            a href="/":
-              img src={contentURI}
-        else:
-          ""
+      # Native Nim Control Flow
+      if content.len == 0:
+        p: "No content provided."
+      else:
+        `div` class="content":
+           # Interpolation
+           p: {content.escapeHtml()}
       
-      # Running more pagecraft with nim. 
-      `div` class="moreContent":
-        for x in 0 .. 10:
-          p: {"Remix pagecraft code into nim " & $x}
+      # Static assets
+      script src="/app.js"
+      /script # Force closing tag
 
-      `div` class="myContent": 
-        h2: "Here is my content!"
-        p: {content}
-      
-      # Add strings to the inner html of a tag
-      `div` class="contentWrapup":
-        """
-          I hope you enjoyed my content!
-        """
-
-      footer:
-        p: "&copy; 2024. All rights reserved. ʕ⊙ᴥ⊙ʔ"
-      
-      # Use a script and add a closing script tag
-      script src="/scripts/prism.js"
-      /script
-
-echo myTemplate("This is my webpage", "Oh wow, this content!", "/assets/contentImg.png", "/scripts/prism.css")
+echo myTemplate("Hello World", "This is PageCraft.")
  ```
 
-## PageCraft, Debby and Mummy
+#### 2. "The Full Stack" (Mummy + Debby + PageCraft)
+PageCraft is designed to work seamlessly with the Mummy HTTP server and Debby ORM. This stack runs incredibly fast on low-power devices.
 
-Pagecraft works very well with the `Mummy` HTML/Web socket server and the `Debby` ORM. Pull in data with `Debby`, generate HTML with `PageCraft` and serve it with `Mummy`.
+```mermaid
+sequenceDiagram
+    %%{init: {'theme': 'neutral' } }%%
+    participant Client
+    participant Mummy as Mummy Server
+    participant App as IndexHandler
+    participant DB as Debby (SQLite)
+    participant PC as PageCraft Template
+
+    Client->>Mummy: GET /
+    Mummy->>App: Dispatch Request
+    App->>DB: pool.filter(Auto, year==1970)
+    DB-->>App: seq[Auto]
+    
+    Note over App, PC: No parsing. Just a function call.
+    App->>PC: indexTemplate(cars)
+    PC-->>App: Returns String (HTML)
+    
+    App->>Mummy: respond(200, html)
+    Mummy-->>Client: HTTP 200 OK
+```
 
 ```nim
 import mummy, mummy/routers
@@ -204,3 +245,6 @@ let server = newServer(router)
 echo "Serving on http://localhost:8080"
 server.serve(Port(8080))
 ```
+
+Credits: 
+Expands on the metaprogramming concepts introduced at [HookRace](https://hookrace.net/blog/introduction-to-metaprogramming-in-nim/).
