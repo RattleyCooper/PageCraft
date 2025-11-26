@@ -67,7 +67,11 @@ Define a `proc`, tag it with `{.htmlTemplate.}`, then you can generate HTML usin
 
 * Reserved Keywords: Use backticks for reserved Nim keywords like `div`.
 
-* ⚠️ Escaping: NO auto-escaping, we're all adults. Use `escapeHtml` provided by pagecraft or bring your own.
+* ⚠️ Escaping: NO auto-escaping, we're all adults. Use `escapeHtml` or the `?` prefix operator provided by pagecraft or bring your own.
+
+```nim
+{"Hello, " & ?userGeneratedName} # escapes `userGeneratedName`
+```
 
 * PageCraft automatically converts underscores (`_`) in attribute names to hyphens (`-`) to support modern HTML standards like data attributes. `data_id="12"` in pagecraft becomes `data-id="12"` in generated HTML.
 
@@ -122,7 +126,8 @@ proc myTemplate(title: string, content: string) {.htmlTemplate.} =
       else:
         `div` class="content":
            # Interpolation
-           p: {content.escapeHtml()}
+           # `content` is escaped
+           p: {?content} 
       
       # Static assets
       script src="/app.js"
@@ -198,8 +203,9 @@ div { margin-bottom: 10px; padding: 10px; background-color: #ffffff; border: 1px
 # Align the template stubs using `alignTemplate`
 proc carCard(car: Auto) {.alignTemplate: 8.} =
   `div` class="auto-div", id={$car.id}:
-    p: {"Make: " & car.make}
-    p: {"Model: " & car.model}
+    # car.make and car.model are escaped with `?` prefix operator.
+    p: {"Make: " & ?car.make}
+    p: {"Model: " & ?car.model}
     p: {"Year: " & $car.year}
 
 proc carsSection(cars: seq[Auto]) {.alignTemplate: 2.} =
