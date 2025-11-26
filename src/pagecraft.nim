@@ -1,7 +1,7 @@
 import micros
 import macros, strutils
 
-proc escapeHtml*(input: string): string =
+proc escapeHtml*(input: string): string {.inline.} =
   result = newStringOfCap(input.len)
   for c in input:
     case c
@@ -11,6 +11,9 @@ proc escapeHtml*(input: string): string =
     of '"': result.add("&quot;")
     of '\'': result.add("&#39;")
     else: result.add(c)
+
+proc `?`*(input: string): string =
+  input.escapeHtml()
 
 template write(arg: untyped) =
   result.add newCall("add", newIdentNode("result"), arg)
@@ -226,6 +229,7 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false, nimCode: bool = false
       var tag = y
       if tag.kind == nnkAccQuoted:
         tag = tag[0]
+      tag.expectKind nnkIdent
 
       writeLit spaces, "<", $tag, ">\n"
     of nnkStrLit, nnkTripleStrLit: # example: "stuff"
