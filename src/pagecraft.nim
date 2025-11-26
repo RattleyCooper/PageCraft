@@ -172,6 +172,7 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false, nimCode: bool = false
       var ran = y[1..^1]
       if ran[^1].kind == nnkStmtList:
         ran = y[1..^2]
+      var c = 0
       for exp in ran:
         if exp.kind == nnkExprEqExpr:
           var k = exp[0]
@@ -179,9 +180,16 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false, nimCode: bool = false
           if exp[1].kind == nnkCurly:
             writeLit $kc, "=\""
             write exp[1][0]
-            writeLit "\" "
+            if c == ran.high:
+              writeLit "\""
+            else:
+              writeLit "\" "
           else:
-            writeLit $kc, "=\"", $exp[1], "\"", " "
+            if c == ran.high:
+              writeLit $kc, "=\"", $exp[1], "\""
+            else:
+              writeLit $kc, "=\"", $exp[1], "\"", " "
+          c += 1
       writeLit ">\n"
       # Command has block of statements, so add closing tag
       if y[^1].kind == nnkStmtList:
