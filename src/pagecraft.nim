@@ -193,6 +193,20 @@ proc htmlInner(x: NimNode, indent = 0, stringProc = false, nimCode: bool = false
             else:
               writeLit $kc, "=\"", $exp[1], "\"", " "
           c += 1
+        elif exp.kind in {nnkIdent, nnkAccQuoted}:
+          # HTML5 Boolean attribute
+          # example: `checked` in
+          #   input type="checkbox" checked:
+          var k = exp
+          if k.kind == nnkAccQuoted:
+            k = k[0]
+          var kc = ident(($k).replace("_", "-"))
+          writeLit $kc
+          if c != ran.high:
+            writeLit " "
+          c += 1
+        else:
+          discard
       writeLit ">\n"
       # Command has block of statements, so add closing tag
       if y[^1].kind == nnkStmtList:
